@@ -226,7 +226,7 @@ function countTcoChars(text) {
   for (const url of urls) {
     adjusted = adjusted.replace(url, 'x'.repeat(23));
   }
-  // also catch bare domains like artlu.ai
+  // also catch bare domains like example.com, myapp.pages.dev
   const bareDomainRegex = /(?<!\w)[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?/g;
   const bareDomains = adjusted.match(bareDomainRegex) || [];
   for (const domain of bareDomains) {
@@ -252,6 +252,34 @@ hard rule across all projects:
 
 ---
 
+## project naming
+
+### convention
+
+project names should immediately tell a non-technical person what the project does.
+
+**standalone projects:** descriptive name, plain language
+- good: "Perp Position Size Calculator", "Terminal File Browser", "Journal System"
+- bad: "projX", "utils-v2", "the thing"
+
+**sub-projects / iterations of a larger project:** what it does — parent name
+- pattern: `description of capability — parent project`
+- examples:
+  - "AI personality tweet generator — xqboost"
+  - "automated posting to X — xqboost"
+  - "multi-model support, generate from UI — xqboost"
+
+### rules
+
+- the name should make sense to someone who has never seen the project
+- lead with what it does, not what it's called internally
+- if a project has multiple capabilities, use a comma: "multi-model support, generate from UI"
+- keep it lowercase in code/data, title case in UI display
+- the parent project name comes after the em dash ( — ) at the end
+- never include personal names, business names, or identifying info in project names
+
+---
+
 ## lessons learned
 
 - always show mockups before writing code
@@ -263,3 +291,4 @@ hard rule across all projects:
 - kimi k2.5 thinking mode is on by default and will timeout on netlify free tier
 - if a user can see a problem in the UI (like "no key"), they expect to fix it from the same screen
 - the zero-effort path should be the default (e.g., "bot picks for me" pre-selected)
+
