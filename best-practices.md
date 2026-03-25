@@ -282,7 +282,7 @@ project names should immediately tell a non-technical person what the project do
 
 ## lessons learned
 
-- always show mockups before writing code
+- always show mockups before writing code — no exceptions, not even for "quick fixes" or "fix it now." urgency changes the speed, not the process. the mockup is the first step of fixing, not a delay before fixing.
 - confirm changes before building
 - test locally before pushing when build credits are limited
 - netlify env vars need a redeploy to take effect
@@ -291,4 +291,3 @@ project names should immediately tell a non-technical person what the project do
 - kimi k2.5 thinking mode is on by default and will timeout on netlify free tier
 - if a user can see a problem in the UI (like "no key"), they expect to fix it from the same screen
 - the zero-effort path should be the default (e.g., "bot picks for me" pre-selected)
-
