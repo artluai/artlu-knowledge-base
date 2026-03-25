@@ -1,0 +1,265 @@
+# best-practices.md — shared knowledge base
+
+reference doc for all projects. any claude instance should fetch this
+before building anything that touches APIs, auth, deployment, or security.
+
+last updated: 2026-03-25 (xqboost pt4 session)
+
+---
+
+## multi-model API integration
+
+### anthropic (claude)
+
+- endpoint: `https://api.anthropic.com/v1/messages`
+- auth header: `x-api-key: <key>` (NOT Bearer token)
+- required header: `anthropic-version: 2023-06-01`
+- body shape: `{ model, max_tokens, system, messages: [{ role, content }] }`
+- system prompt is a top-level field, NOT a message with role "system"
+- response: `data.content[0].text`
+- current best model for fast tasks: `claude-sonnet-4-20250514`
+
+### openai / openai-compatible
+
+- endpoint: `https://api.openai.com/v1/chat/completions`
+- auth header: `Authorization: Bearer <key>`
+- body shape: `{ model, max_tokens, messages: [{ role, content }] }`
+- system prompt IS a message with `role: "system"`
+- response: `data.choices[0].message.content`
+- any openai-compatible API (moonshot, together, etc.) uses the same shape — just swap `baseURL`
+
+### moonshot / kimi k2.5
+
+- endpoint: `https://api.moonshot.ai/v1/chat/completions`
+- uses openai-compatible format
+- **thinking mode is ON by default** — kimi will "think" internally before responding, consuming tokens and time (30+ seconds)
+- to disable thinking: add `thinking: { type: "disabled" }` to request body
+  - this goes at the top level of the JSON, not inside `extra_body`
+  - `extra_body` is a python/node SDK wrapper — raw fetch calls put it at top level
+- when thinking is disabled (instant mode):
+  - set `temperature: 0.6` (not 1.0)
+  - set `top_p: 0.95`
+  - set `max_tokens: 4096`
+  - response time drops from 30s to 3-8s
+- when thinking is enabled:
+  - set `temperature: 1.0`
+  - set `max_tokens: 8192+` (thinking consumes tokens)
+  - actual response is in `choices[0].message.content`
+  - reasoning is in `choices[0].message.reasoning_content`
+- for short-form content (tweets, titles, summaries): always disable thinking
+
+### adapter pattern
+
+when supporting multiple models, use an adapter pattern:
+
+```
+each adapter exposes: { name, generate(systemPrompt, userPrompt, apiKey?) }
+returns: { content, model }
+throws on failure — caller wraps in normalized error
+
+a factory maps model names to adapters:
+  getAdapter('claude-sonnet') → anthropicAdapter
+  getAdapter('gpt-4o') → openaiAdapter
+  getAdapter('kimi-k2.5') → kimiAdapter
+```
+
+benefits:
+- adding a new model = adding one adapter, no changes elsewhere
+- the caller doesn't know which model it's talking to
+- error handling is uniform
+- apiKey param allows per-user keys with env var fallback
+
+---
+
+## api key security
+
+### storage
+
+- never store API keys in plaintext in a database
+- encrypt with AES-256-GCM before storing (use node's built-in `crypto`)
+- store as `iv:authTag:ciphertext` string in firestore
+- encryption key lives as an env var (`ENCRYPTION_KEY`) — generate with `openssl rand -hex 32`
+- mask keys for display: show first 8 + last 4 chars, dots in between
+
+### per-user keys with env var fallback
+
+```
+1. check if user has a stored (encrypted) key in firestore
+2. if yes, decrypt and use it
+3. if no, fall back to the env var
+4. if neither exists, return "no key" error
+```
+
+this lets the app owner set keys via env vars (works immediately)
+while also letting users add their own keys through the UI (scales to multi-user)
+
+### firestore rules for key storage
+
+```
+match /apiKeys/{uid} {
+  allow read, write: if request.auth != null && request.auth.uid == uid;
+}
+```
+
+the netlify function uses firebase admin (bypasses rules), but these
+prevent anyone from reading keys directly via the browser console.
+
+---
+
+## netlify functions
+
+### dependencies
+
+- netlify does NOT auto-install dependencies from a function's own `package.json`
+- fix: add this to `netlify.toml`:
+  ```
+  [[plugins]]
+  package = "@netlify/plugin-functions-install-core"
+  ```
+- alternative: put the dependency in the project root `package.json`
+
+### env vars
+
+- env vars are read at **deploy time**, not per-request
+- if you update an env var in the dashboard, you must redeploy for the function to see it
+- trigger a redeploy from netlify dashboard → deploys → "trigger deploy"
+
+### timeouts
+
+- free tier: 10 second timeout (functions)
+- paid tier: 26 seconds
+- if your function calls an external API that's slow (like kimi with thinking mode), it will timeout
+- the function returns successfully but netlify wraps it in an HTML error page
+- the browser sees `Unexpected token '<', "<HTML>..."` — this means timeout, not a code bug
+
+### cors
+
+always include these headers in every response (including errors):
+```
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Allow-Methods: POST, OPTIONS
+```
+and handle OPTIONS preflight requests with a 204 response.
+
+### error handling
+
+- never return raw API errors to the client (they may contain key prefixes, internal URLs)
+- log the real error server-side: `console.error('[function-name] details:', err)`
+- return a generic message to the client: `{ ok: false, error: 'generation failed — try again' }`
+
+---
+
+## firebase / firestore
+
+### security rules
+
+- never use the default "allow all until date X" rule in production
+- minimum viable rules:
+  ```
+  match /{document=**} {
+    allow read, write: if request.auth != null;
+  }
+  ```
+- sensitive collections (api keys, settings) should have per-user rules
+- firebase admin SDK (used in server functions) bypasses all rules
+
+### auth
+
+- use `firebase.auth().currentUser.getIdToken()` to get a token on the client
+- send it as `Authorization: Bearer <token>` to your function
+- verify with `admin.auth().verifyIdToken(token)` on the server
+- add a UID allowlist for single-user apps: check `decoded.uid` against `OWNER_UID` env var
+
+---
+
+## deployment
+
+### netlify
+
+- auto-deploys from github on push to main
+- every push = one build = build minutes used (300/month on free tier)
+- failed builds still consume minutes
+- test locally with `netlify dev` before pushing if unsure
+- `netlify.toml` controls build command, publish directory, plugins, redirects
+
+### github actions
+
+- used for scheduled/cron tasks (not triggered by users)
+- secrets are stored separately from netlify env vars — same values, different locations
+- if a function needs the same secret as a github action, you must set it in BOTH places
+
+### the two-system pattern
+
+```
+github actions = background automation (cron scripts, scheduled posts)
+netlify functions = on-demand user actions (generate button, settings API)
+
+same database (firestore), same document shapes, different execution environments.
+they coexist. don't merge them.
+```
+
+---
+
+## input sanitization
+
+for any user input that goes into an API call or database:
+
+- cap string length (100-200 chars for names, 500 for keys)
+- strip control characters: `str.replace(/[\x00-\x1f\x7f]/g, '')`
+- validate arrays: cap item count and per-item length
+- validate model names against an allowlist, don't trust client input
+- for source/project IDs: verify they exist in firestore before using
+
+---
+
+## t.co character counting (X/twitter)
+
+X wraps all URLs in t.co links = 23 chars each, regardless of actual URL length.
+
+```javascript
+function countTcoChars(text) {
+  // replace full URLs with 23-char placeholder
+  const urlRegex = /https?:\/\/[^\s]+/g;
+  let adjusted = text;
+  const urls = text.match(urlRegex) || [];
+  for (const url of urls) {
+    adjusted = adjusted.replace(url, 'x'.repeat(23));
+  }
+  // also catch bare domains like artlu.ai
+  const bareDomainRegex = /(?<!\w)[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?/g;
+  const bareDomains = adjusted.match(bareDomainRegex) || [];
+  for (const domain of bareDomains) {
+    if (domain.length !== 23) {
+      adjusted = adjusted.replace(domain, 'x'.repeat(23));
+    }
+  }
+  return adjusted.length;
+}
+```
+
+hard cap: 280 characters after t.co adjustment.
+
+---
+
+## privacy
+
+hard rule across all projects:
+
+- never reveal the human's identity, personal details, or other business names/assets
+- this applies to: code, tweets, journal entries, session notes, commit messages, documentation
+- when in doubt, use "the human" — never real names
+
+---
+
+## lessons learned
+
+- always show mockups before writing code
+- confirm changes before building
+- test locally before pushing when build credits are limited
+- netlify env vars need a redeploy to take effect
+- github secrets are write-only — you can't read them back after saving
+- generating a new firebase service account key doesn't invalidate the old one
+- kimi k2.5 thinking mode is on by default and will timeout on netlify free tier
+- if a user can see a problem in the UI (like "no key"), they expect to fix it from the same screen
+- the zero-effort path should be the default (e.g., "bot picks for me" pre-selected)
