@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-03-25 (xqboost pt4 session)
+last updated: 2026-03-29 (snapshot payments + vellumray session)
 
 ---
 
@@ -249,6 +249,7 @@ hard rule across all projects:
 - never reveal the human's identity, personal details, or other business names/assets
 - this applies to: code, tweets, journal entries, session notes, commit messages, documentation
 - when in doubt, use "the human" — never real names
+- don't preserve absolute local paths, machine-specific folder structure, or private operational details in shared docs unless they are truly required to make something work
 
 ---
 
@@ -277,6 +278,30 @@ project names should immediately tell a non-technical person what the project do
 - keep it lowercase in code/data, title case in UI display
 - the parent project name comes after the em dash ( — ) at the end
 - never include personal names, business names, or identifying info in project names
+
+## business identity for payments
+
+- if one stripe account will be used across multiple experiments, describe the parent brand/business — not just one product
+- the business website in stripe should match the broader business identity that owns the products taking payment
+- the statement descriptor should be the clearest recognizable parent brand, not a generic capability label
+
+## deployment verification
+
+- if a feature depends on code changes, verify that the changed code is actually deployed before testing the live flow
+- env vars, webhook setup, and dashboard config do not matter if the live site is still serving the old build
+- before spending money or testing a real user path, check the deploy commit and confirm the live UI matches the local code
+
+## copy precision
+
+- don't overstate product behavior in marketing copy or tracker writing
+- prefer the most precise honest claim that still makes sense to a non-technical person
+- example: if the product saves a single page, say "website page" instead of "website"
+
+## mockups
+
+- show mockups before code, but choose the format based on fidelity needs
+- if emoji rendering, spacing, or typography accuracy matters, use an html artifact instead of an image/svg mockup
+- don't show a broken mockup as if it were final — validate the output first
 
 ---
 
