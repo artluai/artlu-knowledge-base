@@ -2,7 +2,7 @@
 
 read this first in any new chat before making suggestions, writing tracker content, or changing infra.
 
-last updated: 2026-03-27
+last updated: 2026-03-29
 
 ---
 
@@ -20,6 +20,7 @@ last updated: 2026-03-27
 - read repo-local instructions first. in this setup that usually means `rules.md` and `personality.md`, plus any repo-specific docs that actually exist.
 - if something is important across chats, write it down in docs instead of trusting chat memory
 - never doxx the human or reveal business names, business assets, private identifiers, or other identifying details unless explicitly needed for a local operational setup task
+- shared docs should avoid absolute local paths unless they are truly needed to make something work
 - do not invent session details, quotes, or "funny moments"
 - check the real data before writing tracker or journal content
 - keep explanations brief and practical
@@ -57,7 +58,20 @@ last updated: 2026-03-27
 - main result from the latest rebuild: url mode works end-to-end through the queued worker path
 - screenshot mode improved through the same backend path, but still beta
 - old problem: too much work was trapped inside one fragile request
-- current direction: durable jobs first, then monetization and acquisition
+- stripe is now live and working end-to-end
+- current pricing: starter = 4 credits / 9.99, pro = 15 credits / 29.99
+- free flow permissions bug was fixed by allowing users to create their own doc and update only `freeUsedToday`
+- landing copy now says `website page` instead of `website`
+- sign-in modal was softened to a calmer action-first version
+- current direction: monetization is live; next focus is acquisition / google ads readiness
+
+### vellumray
+
+- public site: `https://vellumray.com`
+- purpose: business-facing brand site for traffic, support, payments, and future product experiments
+- deployed on cloudflare pages
+- `hello@vellumray.com` and `support@vellumray.com` forward through cloudflare email routing
+- used as the parent business identity for stripe, not just one product
 
 ### xqboost
 
@@ -75,7 +89,7 @@ last updated: 2026-03-27
 
 ## current priorities
 
-- snapshot: add stripe
 - snapshot: get the site ready for google ads
+- snapshot: tighten trust layer, policies, and conversion flow for paid traffic
 - keep tracker entries and journal entries current as major milestones ship
 - update this file when a workflow, architecture, or source-of-truth setup changes
