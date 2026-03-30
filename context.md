@@ -2,7 +2,7 @@
 
 read this first in any new chat before making suggestions, writing tracker content, or changing infra.
 
-last updated: 2026-03-29
+last updated: 2026-03-31
 
 ---
 
@@ -24,6 +24,10 @@ last updated: 2026-03-29
 - do not invent session details, quotes, or "funny moments"
 - check the real data before writing tracker or journal content
 - keep explanations brief and practical
+- for fragile visual systems, use prototype-first workflow: validate in a duplicate, then port the approved version back into the real branch
+- if live code exists, use that as the visual source of truth instead of reconstructing from screenshots
+- for skill-mapping systems, never change the underlying branch structure just to make the interface look nicer
+- when building panels meant for external review, optimize for proof and clarity over flavor text
 
 ## shared references
 
@@ -79,6 +83,17 @@ last updated: 2026-03-29
 - project names can feed announcement workflows, so titles should stay clear and human-readable
 - prefer plain separators like commas, `+`, or words over awkward punctuation if a title may get reused in tweets
 
+### vibeskill
+
+- public prototype: `https://vibeskill-prototype.pages.dev/`
+- current state: deployed public prototype
+- purpose: map ai-assisted coding work onto a structured software engineering skill tree
+- current workflow: gemini-generated frontend scaffolding refined by codex into a more faithful canonical skill-map prototype
+- important rule: the canonical skill map is the source of truth; ui should not invent or smooth branch structure for presentation
+- important rule: the approved main neural-map screen is effectively frozen for now; layout changes should be tested in a duplicate/prototype first
+- current improvement areas: move approved prototype refinements back into the working branch, keep sidebars/evidence views dense and reference-heavy, and continue replacing placeholder/demo content with canonical content
+- deployment: static frontend on cloudflare pages
+
 ## naming and writing rules
 
 - project names should say what the thing does
@@ -91,5 +106,8 @@ last updated: 2026-03-29
 
 - snapshot: get the site ready for google ads
 - snapshot: tighten trust layer, policies, and conversion flow for paid traffic
+- vibeskill: port the approved prototype changes back into `radial-v2`
+- vibeskill: keep the main neural-map screen stable while improving evidence/reference surfaces around it
+- vibeskill: update docs and project memory so the written source of truth matches the live deployed prototype
 - keep tracker entries and journal entries current as major milestones ship
 - update this file when a workflow, architecture, or source-of-truth setup changes

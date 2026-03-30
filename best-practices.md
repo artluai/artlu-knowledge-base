@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-03-29 (snapshot payments + vellumray session)
+last updated: 2026-03-31 (vibeskill prototype deployment + canonical map refinement)
 
 ---
 
@@ -198,6 +198,66 @@ netlify functions = on-demand user actions (generate button, settings API)
 same database (firestore), same document shapes, different execution environments.
 they coexist. don't merge them.
 ```
+
+## cloudflare pages
+
+### static frontend deploys
+
+- for vite/react prototypes, `npm run build` outputs the production site into `dist/`
+- for direct upload deploys, the contents of `dist/` are the site root
+- if uploading manually, make sure `index.html` and `assets/` are at the top level of the upload — not nested under an extra folder
+- cloudflare pages is a good default for static prototypes that don't need server-side rendering or edge functions yet
+
+### when to use pages vs app hosting
+
+- use cloudflare pages when the product is a static frontend or prototype
+- keep repo integration optional early on; direct upload is faster when the goal is just to publish the current state
+- only add more deployment complexity when the product actually needs backend behavior at the edge
+
+## source-of-truth UI systems
+
+when a product claims to track progress against a real knowledge map:
+
+- the canonical map is the source of truth
+- ui convenience is not a valid reason to invent, trim, or pad branches
+- if a category has 3 real first-level children, show 3
+- if another has 5, show 5
+- do not equalize counts just to make the layout feel cleaner
+- if the truth is visually awkward, solve it at the layout/presentation layer without changing the underlying structure
+
+good pattern:
+1. define the canonical data model
+2. have all views read from that same source
+3. solve display problems honestly after that
+
+bad pattern:
+1. invent "nicer" placeholder branches for the ui
+2. let the main screen and side panel drift apart
+3. call the result a skill map
+
+## multi-model product refinement
+
+a useful workflow for ai-built products:
+
+- fast model (gemini, etc.) generates the initial interface or scaffold
+- stricter model (codex, claude, etc.) refines structure, consistency, and data truth
+- validate design changes in a duplicate/prototype first when the live layout is fragile
+- once approved, move the exact prototype changes back into the real working branch
+
+best use of labor:
+- generation model: speed, broad exploration, visual starting points
+- refinement model: correctness, constraint-following, canonical mapping, deployment hygiene
+
+## evidence-first skill/portfolio interfaces
+
+for any skill dossier, reference panel, or "show your work" interface:
+
+- proof should appear early
+- dense document flow usually beats big cards
+- links should be specific: tracker entry, repo, commit, pr, deploy, artifact
+- explanatory sections should support the evidence, not bury it
+- if a section doesn't explain the skill or prove the skill, question whether it belongs
+- github/gitbook-style information density is often better than "beautiful panel" design for credibility
 
 ---
 
