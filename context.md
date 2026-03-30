@@ -67,7 +67,12 @@ last updated: 2026-03-31
 - free flow permissions bug was fixed by allowing users to create their own doc and update only `freeUsedToday`
 - landing copy now says `website page` instead of `website`
 - sign-in modal was softened to a calmer action-first version
-- current direction: monetization is live; next focus is acquisition / google ads readiness
+- current direction: monetization is live; acquisition setup is now live too
+- first google search campaign is published and currently in learning
+- advertiser verification was completed in google ads
+- purchase and begin-checkout conversions were created and wired
+- google ads tracking ids were moved into frontend code after netlify function deploys hit the AWS Lambda env var size limit
+- next focus: watch search terms, add negatives, and tighten the campaign only after real impressions arrive
 
 ### vellumray
 

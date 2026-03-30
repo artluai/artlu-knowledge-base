@@ -123,6 +123,12 @@ prevent anyone from reading keys directly via the browser console.
 - env vars are read at **deploy time**, not per-request
 - if you update an env var in the dashboard, you must redeploy for the function to see it
 - trigger a redeploy from netlify dashboard → deploys → "trigger deploy"
+- netlify functions ultimately inherit env vars into aws lambda, which has a hard env-size limit
+- if deploys fail with `your environment variables exceed the 4KB limit imposed by AWS Lambda`, reduce function env payload first
+- if per-scope env vars are not available on the current netlify plan, do not keep public frontend ids in env vars just because they started there
+- public ids like google ads tag ids, conversion labels, firebase public config, etc. can live in frontend code when needed
+- secrets stay in env vars; public identifiers do not need to
+- simpler operational path wins: if moving public config into code removes dashboard complexity and avoids deploy failures, do that
 
 ### timeouts
 
