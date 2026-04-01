@@ -2,7 +2,7 @@
 
 read this first in any new chat before making suggestions, writing tracker content, or changing infra.
 
-last updated: 2026-03-31
+last updated: 2026-04-01
 
 ---
 
@@ -98,6 +98,15 @@ last updated: 2026-03-31
 - important rule: the approved main neural-map screen is effectively frozen for now; layout changes should be tested in a duplicate/prototype first
 - current improvement areas: move approved prototype refinements back into the working branch, keep sidebars/evidence views dense and reference-heavy, and continue replacing placeholder/demo content with canonical content
 - deployment: static frontend on cloudflare pages
+- tracker import: now backed by a real tracker snapshot instead of seeded placeholder records
+- github import: now uses live public github repo sync
+- duplicate candidates no longer count toward progress until reviewed
+- branch mappings were tightened so child branches only receive explicit branch-level credit
+- major remaining gap: ai session imports are still not real
+- emerging product direction: add a stack-organized view/tree as a parallel lens for portfolio-facing use
+- key interaction finding: draggable category nodes should not animate positional properties during drag; connector lines and boxes need to read from the same raw coordinates or the map feels laggy
+- key interaction finding: once child branches are expanded, dragging should be disabled until the user collapses back to the normal system view
+- likely next correction: first-run state should begin at zero and only fill after import
 
 ## naming and writing rules
 

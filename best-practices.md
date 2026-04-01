@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-03-31 (vibeskill prototype deployment + canonical map refinement)
+last updated: 2026-04-01 (vibeskill tracker snapshot import + live public github sync)
 
 ---
 
@@ -264,6 +264,33 @@ for any skill dossier, reference panel, or "show your work" interface:
 - explanatory sections should support the evidence, not bury it
 - if a section doesn't explain the skill or prove the skill, question whether it belongs
 - github/gitbook-style information density is often better than "beautiful panel" design for credibility
+
+## vibeskill evidence rules
+
+for evidence-driven skill tracking:
+
+- separate domain-level mapping from branch-level mapping
+- domain evidence can support a category without automatically proving every child branch
+- unresolved duplicate candidates must not count toward progress before review
+- if a review card has only one possible outcome, it should not be treated as an actionable review decision
+- first-run state should start at zero unless the app has already completed an import
+- stack should be treated as a parallel evidence lens, not a replacement for the skill tree
+
+for public github prototype sync:
+- live public sync is acceptable at prototype scale
+- remember that unauthenticated public api requests can hit rate limits
+- avoid presenting public github sync as a full authenticated user connection flow
+
+## interactive graph dragging
+
+for draggable graph or map interfaces:
+
+- keep connector lines and node positions driven by the same raw coordinates
+- do not animate positional properties like `left` and `top` during active drag
+- avoid broad css like `transition: all` on draggable nodes because it introduces visual lag
+- reserve animation for non-positional states like opacity, scale, border, or glow
+- if a focused or expanded state introduces child nodes, disable dragging until the graph returns to its normal state
+- if the graph uses both pan and node drag, stop pointer propagation at the node so the canvas does not fight the drag interaction
 
 ---
 
