@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-04-06 (UI mockup approval + parity work rule added)
+last updated: 2026-04-06 (external writes confirmation rule added)
 
 ---
 
@@ -404,6 +404,32 @@ project names should immediately tell a non-technical person what the project do
 
 ---
 
+## external writes require explicit confirmation
+
+any write to an external system requires an explicit "yes" from the user in chat before executing. this includes:
+
+- firestore / database writes
+- tracker entries (add_project, add_journal_entry, update_project)
+- stripe operations
+- github commits or PRs
+- sending emails or messages
+- any MCP tool that modifies external state
+
+**what counts as confirmation:** the word "yes", "go ahead", "post it", "do it", or equivalent affirmative in chat.
+
+**what does not count as confirmation:**
+- "do something for me to confirm" — this is a request to show something first, not approval
+- silence
+- enthusiasm about the plan
+- asking to see a mockup or draft
+
+the process:
+1. draft the content in chat (entry name, description, artifact, etc.)
+2. wait for explicit approval
+3. only then call the tool
+
+---
+
 ## UI changes require mockup approval
 
 for any UI change — new components, parity work, layout changes, modal or panel additions:
@@ -459,3 +485,4 @@ partial parity is not parity. skipping the diff and mockup steps is the failure 
 - kimi k2.5 thinking mode is on by default and will timeout on netlify free tier
 - if a user can see a problem in the UI (like "no key"), they expect to fix it from the same screen
 - the zero-effort path should be the default (e.g., "bot picks for me" pre-selected)
+- "do something for me to confirm" is a request for approval, not approval itself
