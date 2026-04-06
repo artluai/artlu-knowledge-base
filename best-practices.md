@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-04-06
+last updated: 2026-04-06 (feature flow thinking added)
 
 ---
 
@@ -158,28 +158,6 @@ and handle OPTIONS preflight requests with a 204 response.
 
 ## firebase / firestore
 
-### firebase admin credential — critical pattern
-
-**never split the service account into three separate env vars** (project_id, client_email, private_key).
-this causes firestore to fail with `16 UNAUTHENTICATED` even though auth token verification (`verifyIdToken`) works fine.
-the reason: `verifyIdToken` checks the token against google's public signing keys — it doesn't need the service account credential.
-firestore does need the credential to mint an OAuth 2 access token, and split vars cause subtle formatting failures.
-
-**correct pattern:** store the entire downloaded service account JSON as one env var:
-```
-FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"...","private_key":"..."}
-```
-
-initialize with:
-```js
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-```
-
-**also required:** the service account needs the **Cloud Datastore User** IAM role in google cloud console
-(`console.cloud.google.com/iam-admin/iam`) or all firestore calls will fail with UNAUTHENTICATED
-even with a correctly formatted credential.
-
 ### security rules
 
 - never use the default "allow all until date X" rule in production
@@ -211,17 +189,6 @@ even with a correctly formatted credential.
 - test locally with `netlify dev` before pushing if unsure
 - `netlify.toml` controls build command, publish directory, plugins, redirects
 
-### railway
-
-- persistent node.js server hosting — unlike netlify functions, no timeout limit
-- use for any server that needs to stay alive during long-running requests (e.g. pipeline runs across 100+ api calls)
-- auto-deploys from github on push to main
-- env vars: set in railway dashboard → project settings → shared variables → share to service
-- custom domains: service → settings → networking → custom domain, then add CNAME + TXT verification records in your DNS provider
-- `PORT` env var is set automatically by railway — server must use `process.env.PORT || 3000`
-- stripe webhooks: set `APP_URL` env var to your deployed domain so post-payment redirects go to the right place
-- hobby plan: $5/month includes $5 of compute credit — sufficient for a lightweight node server with moderate traffic
-
 ### github actions
 
 - used for scheduled/cron tasks (not triggered by users)
@@ -238,77 +205,51 @@ same database (firestore), same document shapes, different execution environment
 they coexist. don't merge them.
 ```
 
----
+## cloudflare pages
 
-## privacy
+### static frontend deploys
 
-hard rule across all projects:
+- for vite/react prototypes, `npm run build` outputs the production site into `dist/`
+- for direct upload deploys, the contents of `dist/` are the site root
+- if uploading manually, make sure `index.html` and `assets/` are at the top level of the upload — not nested under an extra folder
+- cloudflare pages is a good default for static prototypes that don't need server-side rendering or edge functions yet
 
-- never reveal the human's identity, personal details, or other business names/assets
-- this applies to: code, tweets, journal entries, session notes, commit messages, documentation
-- when in doubt, use "the human" — never real names
-- don't preserve absolute local paths, machine-specific folder structure, or private operational details in shared docs unless they are truly required to make something work
+### when to use pages vs app hosting
 
----
-
-## project naming
-
-### convention
-
-project names should immediately tell a non-technical person what the project does.
-
-**standalone projects:** descriptive name, plain language
-- good: "Perp Position Size Calculator", "Terminal File Browser", "Journal System"
-- bad: "projX", "utils-v2", "the thing"
-
-**sub-projects / iterations of a larger project:** what it does — parent name
-- pattern: `description of capability — parent project`
-- examples:
-  - "AI personality tweet generator — xqboost"
-  - "automated posting to X — xqboost"
-  - "paid search niche research SaaS — Keyword Pipeline"
-
-### rules
-
-- the name should make sense to someone who has never seen the project
-- lead with what it does, not what it's called internally — capability first, product name last
-- if a project has multiple capabilities, use a comma: "multi-model support, generate from UI"
-- keep it lowercase in code/data, title case in UI display
-- the parent project name comes after the em dash ( — ) at the end
-- never include personal names, business names, or identifying info in project names
-- don't lead with the product name if the product isn't famous yet — lead with the capability
-
-## business identity for payments
-
-- if one stripe account will be used across multiple experiments, describe the parent brand/business — not just one product
-- the business website in stripe should match the broader business identity that owns the products taking payment
-- the statement descriptor should be the clearest recognizable parent brand, not a generic capability label
-- when adding a new stripe product, create a new secret key specifically for that product rather than reusing or rotating existing keys — rotating breaks other products that depend on that key
-
-## deployment verification
-
-- if a feature depends on code changes, verify that the changed code is actually deployed before testing the live flow
-- env vars, webhook setup, and dashboard config do not matter if the live site is still serving the old build
-- before spending money or testing a real user path, check the deploy commit and confirm the live UI matches the local code
-
-## copy precision
-
-- don't overstate product behavior in marketing copy or tracker writing
-- prefer the most precise honest claim that still makes sense to a non-technical person
-- example: if the product saves a single page, say "website page" instead of "website"
-
-## mockups
-
-- show mockups before code, but choose the format based on fidelity needs
-- if emoji rendering, spacing, or typography accuracy matters, use an html artifact instead of an image/svg mockup
-- don't show a broken mockup as if it were final — validate the output first
+- use cloudflare pages when the product is a static frontend or prototype
+- keep repo integration optional early on; direct upload is faster when the goal is just to publish the current state
+- only add more deployment complexity when the product actually needs backend behavior at the edge
 
 ---
 
-## lessons learned
+## source-of-truth UI systems
 
-- always show mockups before writing code — no exceptions, not even for "quick fixes" or "fix it now." urgency changes the speed, not the process.
-- generates the initial interface or scaffold
+when a product claims to track progress against a real knowledge map:
+
+- the canonical map is the source of truth
+- ui convenience is not a valid reason to invent, trim, or pad branches
+- if a category has 3 real first-level children, show 3
+- if another has 5, show 5
+- do not equalize counts just to make the layout feel cleaner
+- if the truth is visually awkward, solve it at the layout/presentation layer without changing the underlying structure
+
+good pattern:
+1. define the canonical data model
+2. have all views read from that same source
+3. solve display problems honestly after that
+
+bad pattern:
+1. invent "nicer" placeholder branches for the ui
+2. let the main screen and side panel drift apart
+3. call the result a skill map
+
+---
+
+## multi-model product refinement
+
+a useful workflow for ai-built products:
+
+- fast model (gemini, etc.) generates the initial interface or scaffold
 - stricter model (codex, claude, etc.) refines structure, consistency, and data truth
 - validate design changes in a duplicate/prototype first when the live layout is fragile
 - once approved, move the exact prototype changes back into the real working branch
@@ -316,6 +257,8 @@ project names should immediately tell a non-technical person what the project do
 best use of labor:
 - generation model: speed, broad exploration, visual starting points
 - refinement model: correctness, constraint-following, canonical mapping, deployment hygiene
+
+---
 
 ## evidence-first skill/portfolio interfaces
 
@@ -343,6 +286,8 @@ for public github prototype sync:
 - live public sync is acceptable at prototype scale
 - remember that unauthenticated public api requests can hit rate limits
 - avoid presenting public github sync as a full authenticated user connection flow
+
+---
 
 ## interactive graph dragging
 
@@ -372,3 +317,125 @@ for any user input that goes into an API call or database:
 ## t.co character counting (X/twitter)
 
 X wraps all URLs in t.co links = 23 chars each, regardless of actual URL length.
+
+```javascript
+function countTcoChars(text) {
+  const urlRegex = /https?:\/\/[^\s]+/g;
+  let adjusted = text;
+  const urls = text.match(urlRegex) || [];
+  for (const url of urls) {
+    adjusted = adjusted.replace(url, 'x'.repeat(23));
+  }
+  const bareDomainRegex = /(?<!\w)[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?/g;
+  const bareDomains = adjusted.match(bareDomainRegex) || [];
+  for (const domain of bareDomains) {
+    if (domain.length !== 23) {
+      adjusted = adjusted.replace(domain, 'x'.repeat(23));
+    }
+  }
+  return adjusted.length;
+}
+```
+
+hard cap: 280 characters after t.co adjustment.
+
+---
+
+## privacy
+
+hard rule across all projects:
+
+- never reveal the human's identity, personal details, or other business names/assets
+- this applies to: code, tweets, journal entries, session notes, commit messages, documentation
+- when in doubt, use "the human" — never real names
+- don't preserve absolute local paths, machine-specific folder structure, or private operational details in shared docs unless they are truly required to make something work
+
+---
+
+## project naming
+
+### convention
+
+project names should immediately tell a non-technical person what the project does.
+
+**standalone projects:** descriptive name, plain language
+- good: "Perp Position Size Calculator", "Terminal File Browser", "Journal System"
+- bad: "projX", "utils-v2", "the thing"
+
+**sub-projects / iterations of a larger project:** what it does — parent name
+- pattern: `description of capability — parent project`
+- examples:
+  - "AI personality tweet generator — xqboost"
+  - "automated posting to X — xqboost"
+  - "multi-model support, generate from UI — xqboost"
+
+### rules
+
+- the name should make sense to someone who has never seen the project
+- lead with what it does, not what it's called internally
+- if a project has multiple capabilities, use a comma: "multi-model support, generate from UI"
+- keep it lowercase in code/data, title case in UI display
+- the parent project name comes after the em dash ( — ) at the end
+- never include personal names, business names, or identifying info in project names
+
+---
+
+## business identity for payments
+
+- if one stripe account will be used across multiple experiments, describe the parent brand/business — not just one product
+- the business website in stripe should match the broader business identity that owns the products taking payment
+- the statement descriptor should be the clearest recognizable parent brand, not a generic capability label
+
+---
+
+## deployment verification
+
+- if a feature depends on code changes, verify that the changed code is actually deployed before testing the live flow
+- env vars, webhook setup, and dashboard config do not matter if the live site is still serving the old build
+- before spending money or testing a real user path, check the deploy commit and confirm the live UI matches the local code
+
+---
+
+## copy precision
+
+- don't overstate product behavior in marketing copy or tracker writing
+- prefer the most precise honest claim that still makes sense to a non-technical person
+- example: if the product saves a single page, say "website page" instead of "website"
+
+---
+
+## mockups
+
+- show mockups before code, but choose the format based on fidelity needs
+- if emoji rendering, spacing, or typography accuracy matters, use an html artifact instead of an image/svg mockup
+- don't show a broken mockup as if it were final — validate the output first
+
+---
+
+## feature flow thinking
+
+before implementing any feature, trace the complete user journey — not just the isolated change:
+
+1. **entry point** — how does the user get there?
+2. **the action** — what does the feature do?
+3. **after the action** — where does the user land? what state is the app in? what do they see?
+4. **data continuity** — if data was created or loaded, does it follow the user forward?
+5. **reverse path** — if the user goes back or switches tabs, does the state survive?
+
+when tracing the flow reveals second-order changes (new state, navigation, tab switching, data loading), surface them as suggestions before implementing. don't silently add them. confirm first, then build.
+
+a feature that works in isolation but breaks the flow is a broken feature.
+
+---
+
+## lessons learned
+
+- always show mockups before writing code — no exceptions, not even for "quick fixes" or "fix it now." urgency changes the speed, not the process. the mockup is the first step of fixing, not a delay before fixing.
+- confirm changes before building
+- test locally before pushing when build credits are limited
+- netlify env vars need a redeploy to take effect
+- github secrets are write-only — you can't read them back after saving
+- generating a new firebase service account key doesn't invalidate the old one
+- kimi k2.5 thinking mode is on by default and will timeout on netlify free tier
+- if a user can see a problem in the UI (like "no key"), they expect to fix it from the same screen
+- the zero-effort path should be the default (e.g., "bot picks for me" pre-selected)
