@@ -466,11 +466,20 @@ before implementing any feature, trace the complete user journey — not just th
 2. **the action** — what does the feature do?
 3. **after the action** — where does the user land? what state is the app in? what do they see?
 4. **data continuity** — if data was created or loaded, does it follow the user forward?
-5. **reverse path** — if the user goes back or switches tabs, does the state survive?
+5. **reverse path** — if the user goes back, switches tabs, reloads, signs out/in, imports, merges, or restores later, does the state still behave correctly?
 
-when tracing the flow reveals second-order changes (new state, navigation, tab switching, data loading), surface them as suggestions before implementing. don't silently add them. confirm first, then build.
+when a feature creates a new data type, saved object, or mode, also trace its downstream workflow effects:
 
-a feature that works in isolation but breaks the flow is a broken feature.
+- how it is labeled in the UI
+- where it reloads back into the app
+- whether it routes to the correct screen or tab
+- whether merge/import/export rules still make sense
+- whether old saved data needs a fallback mapping
+- whether selection, filtering, badges, and restore logic still reflect the correct type
+
+when tracing the flow reveals second-order changes, surface them as suggestions before implementing. don't silently add them. confirm first, then build.
+
+a feature that works in isolation but breaks the later workflow is a broken feature.
 
 ---
 
