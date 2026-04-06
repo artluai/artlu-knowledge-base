@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-04-06 (feature flow thinking added)
+last updated: 2026-04-06 (UI mockup approval + parity work rule added)
 
 ---
 
@@ -404,11 +404,17 @@ project names should immediately tell a non-technical person what the project do
 
 ---
 
-## mockups
+## UI changes require mockup approval
 
-- show mockups before code, but choose the format based on fidelity needs
-- if emoji rendering, spacing, or typography accuracy matters, use an html artifact instead of an image/svg mockup
-- don't show a broken mockup as if it were final — validate the output first
+for any UI change — new components, parity work, layout changes, modal or panel additions:
+
+1. never go straight from request to code
+2. read the relevant code first (not screenshots, not memory)
+3. build an html artifact mockup showing the target state
+4. get explicit approval on the mockup
+5. only then write code
+
+urgency does not skip the mockup step.
 
 ---
 
@@ -425,6 +431,20 @@ before implementing any feature, trace the complete user journey — not just th
 when tracing the flow reveals second-order changes (new state, navigation, tab switching, data loading), surface them as suggestions before implementing. don't silently add them. confirm first, then build.
 
 a feature that works in isolation but breaks the flow is a broken feature.
+
+---
+
+## parity work rule
+
+when asked to make component A match component B:
+
+1. read both components fully from the code — not from screenshots, not from memory
+2. produce an explicit diff: list every element in B that is absent in A
+3. build an html artifact mockup showing the full target state
+4. confirm the mockup with the human before touching any code
+5. only then implement — the entire diff, not just the part that was pointed at
+
+partial parity is not parity. skipping the diff and mockup steps is the failure mode.
 
 ---
 
