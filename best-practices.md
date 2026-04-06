@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-04-06 (external writes confirmation rule added)
+last updated: 2026-04-06 (approved artifact embedding rule added)
 
 ---
 
@@ -430,6 +430,20 @@ the process:
 
 ---
 
+## approved artifact embedding
+
+when embedding an approved artifact into a tracker entry or any external system:
+
+- always read the file directly from disk — never reconstruct from memory
+- the file that was presented and approved is the source of truth
+- do not rewrite, compress, or re-encode the content before passing it
+- unicode characters stay as-is — do not convert to escape sequences
+
+correct: read file from disk → pass content directly to `update_project`
+wrong: reconstruct HTML from memory → pass to `update_project`
+
+---
+
 ## UI changes require mockup approval
 
 for any UI change — new components, parity work, layout changes, modal or panel additions:
@@ -486,3 +500,4 @@ partial parity is not parity. skipping the diff and mockup steps is the failure 
 - if a user can see a problem in the UI (like "no key"), they expect to fix it from the same screen
 - the zero-effort path should be the default (e.g., "bot picks for me" pre-selected)
 - "do something for me to confirm" is a request for approval, not approval itself
+- never reconstruct an approved artifact from memory — read it from disk
