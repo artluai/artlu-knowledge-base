@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-04-06 (approved artifact embedding rule added)
+last updated: 2026-04-08 (tracker conventions, doc standards, VPS patterns added)
 
 ---
 
@@ -26,7 +26,15 @@ last updated: 2026-04-06 (approved artifact embedding rule added)
 - body shape: `{ model, max_tokens, messages: [{ role, content }] }`
 - system prompt IS a message with `role: "system"`
 - response: `data.choices[0].message.content`
-- any openai-compatible API (moonshot, together, etc.) uses the same shape — just swap `baseURL`
+- any openai-compatible API (OpenRouter, moonshot, together, etc.) uses the same shape — just swap `baseURL`
+
+### openrouter
+
+- endpoint: `https://openrouter.ai/api/v1/chat/completions`
+- auth header: `Authorization: Bearer <key>`
+- openai-compatible format — same shape as above
+- preferred provider for Qwen models: `qwen/qwen-plus` (chat), `qwen/qwen-turbo` (scoring/fast)
+- use over DashScope or MuleRouter — more reliable, broader model selection, same code works for any model swap
 
 ### moonshot / kimi k2.5
 
@@ -205,100 +213,151 @@ same database (firestore), same document shapes, different execution environment
 they coexist. don't merge them.
 ```
 
-## cloudflare pages
-
-### static frontend deploys
+### cloudflare pages
 
 - for vite/react prototypes, `npm run build` outputs the production site into `dist/`
 - for direct upload deploys, the contents of `dist/` are the site root
-- if uploading manually, make sure `index.html` and `assets/` are at the top level of the upload — not nested under an extra folder
-- cloudflare pages is a good default for static prototypes that don't need server-side rendering or edge functions yet
-
-### when to use pages vs app hosting
-
-- use cloudflare pages when the product is a static frontend or prototype
-- keep repo integration optional early on; direct upload is faster when the goal is just to publish the current state
-- only add more deployment complexity when the product actually needs backend behavior at the edge
 
 ---
 
-## source-of-truth UI systems
+## VPS projects (Hetzner)
 
-when a product claims to track progress against a real knowledge map:
+### server setup (standard)
 
-- the canonical map is the source of truth
-- ui convenience is not a valid reason to invent, trim, or pad branches
-- if a category has 3 real first-level children, show 3
-- if another has 5, show 5
-- do not equalize counts just to make the layout feel cleaner
-- if the truth is visually awkward, solve it at the layout/presentation layer without changing the underlying structure
+```bash
+apt update && apt upgrade -y && apt install -y curl nginx docker.io
+systemctl enable docker && systemctl start docker
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs
+npm install -g pm2
+pm2 startup
+```
 
-good pattern:
-1. define the canonical data model
-2. have all views read from that same source
-3. solve display problems honestly after that
+### postgres via docker
 
-bad pattern:
-1. invent "nicer" placeholder branches for the ui
-2. let the main screen and side panel drift apart
-3. call the result a skill map
+```bash
+docker run -d --name postgres --restart always \
+  -e POSTGRES_PASSWORD=yourpassword \
+  -e POSTGRES_DB=yourdb \
+  -p 5432:5432 postgres:16
+```
 
----
+### nginx proxy pattern
 
-## multi-model product refinement
+```nginx
+server {
+    listen 80;
+    server_name _;
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
 
-a useful workflow for ai-built products:
+### deploy workflow
 
-- fast model (gemini, etc.) generates the initial interface or scaffold
-- stricter model (codex, claude, etc.) refines structure, consistency, and data truth
-- validate design changes in a duplicate/prototype first when the live layout is fragile
-- once approved, move the exact prototype changes back into the real working branch
+```bash
+# after GitHub Desktop push:
+cd /bots/[project] && git pull && pm2 restart [project]
 
-best use of labor:
-- generation model: speed, broad exploration, visual starting points
-- refinement model: correctness, constraint-following, canonical mapping, deployment hygiene
+# if .env changed:
+pm2 restart [project] --update-env
+```
 
----
+### playwright on VPS
 
-## evidence-first skill/portfolio interfaces
+- install deps first: `npx playwright install-deps chromium`
+- then browser: `npx playwright install chromium`
+- this is a large download (~300MB) — it will appear to hang, give it 5 minutes
+- `npm install playwright` runs instantly if already installed — check with that first
 
-for any skill dossier, reference panel, or "show your work" interface:
+### ARM vs x86 on Hetzner
 
-- proof should appear early
-- dense document flow usually beats big cards
-- links should be specific: tracker entry, repo, commit, pr, deploy, artifact
-- explanatory sections should support the evidence, not bury it
-- if a section doesn't explain the skill or prove the skill, question whether it belongs
-- github/gitbook-style information density is often better than "beautiful panel" design for credibility
-
-## vibeskill evidence rules
-
-for evidence-driven skill tracking:
-
-- separate domain-level mapping from branch-level mapping
-- domain evidence can support a category without automatically proving every child branch
-- unresolved duplicate candidates must not count toward progress before review
-- if a review card has only one possible outcome, it should not be treated as an actionable review decision
-- first-run state should start at zero unless the app has already completed an import
-- stack should be treated as a parallel evidence lens, not a replacement for the skill tree
-
-for public github prototype sync:
-- live public sync is acceptable at prototype scale
-- remember that unauthenticated public api requests can hit rate limits
-- avoid presenting public github sync as a full authenticated user connection flow
+- CAX11 (ARM) is cheapest but has Playwright quirks
+- CX23 (x86 AMD) at ~$6/mo is recommended for Node.js bots that use Playwright
+- x86 has better npm ecosystem compatibility
 
 ---
 
-## interactive graph dragging
+## tracker conventions
 
-for draggable graph or map interfaces:
+### project name format
 
-- keep connector lines and node positions driven by the same raw coordinates
-- do not animate positional properties like `left` and `top` during active drag
-- avoid broad css like `transition: all` on draggable nodes because it introduces visual lag
-- reserve animation for non-positional states like opacity, scale, border, or glow
-- if a focused or expanded state introduces child nodes, disable dragging until the graph returns to its normal state
-- if the graph uses both pan and node drag, stop pointer propagation at the node so the canvas does not fight the drag interaction
+```
+[what it is/does] - [Project Name]
+```
+
+description first, project name last. always.
+
+**good:**
+```
+AI agent control panel mockup - Animabot
+keyword filtering feature, stripe billing - Pipelinecpc
+reddit brand monitor
+interactive skill-tree visual mockup — VibeSkill
+```
+
+**bad:**
+```
+Animabot - AI agent control panel mockup   ← name first, wrong
+Animabot mockup                            ← too vague
+Animabot                                   ← no context
+```
+
+if the project name is self-explanatory (e.g. "reddit brand monitor"), no dash needed.
+
+### longDesc format
+
+break into short **bold labelled sections**. write for two audiences: a developer and a non-technical person.
+
+```
+**What is [Project]?**
+One or two sentences. Plain English.
+
+**What it does**
+Major features, screens, or flows. Name specific things.
+
+**How it works** (optional, for technical entries)
+Stack choices, architecture decisions.
+
+**Built with**
+Technologies. Short.
+```
+
+rules:
+- direct and specific, no filler
+- don't start with "This project is a..." or "I built this because..."
+- short sentences, one idea per line
+- technical terms OK — but explain the purpose, not just the name
+
+### artifactHtml field
+
+paste raw HTML directly to embed a live demo via `iframe srcdoc`. no deploy needed. the site renders it automatically. use this for mockups, interactive tools, any single-file HTML artifact.
+
+---
+
+## project documentation standards
+
+every serious project should have these three files in the repo root:
+
+### README.md
+for GitHub visitors. what it is, how to set it up, environment variables, architecture overview. written for someone who wants to fork and run it.
+
+### CLAUDE.md
+for Claude. full technical context to resume work in a new session without re-explaining. includes:
+- server details (IP, SSH, directory)
+- complete file structure with what each file does
+- database schema (all tables, all columns, purpose)
+- all environment variables
+- API routes (public and admin)
+- current status (what works, what's pending)
+- deploy workflow
+- pending items
+
+### PRD.md
+product requirements. the vision, current state, planned features, design principles, technical constraints, out of scope. the north star doc. write it so someone new to the project understands where it's going and why decisions were made.
 
 ---
 
@@ -510,3 +569,8 @@ partial parity is not parity. skipping the diff and mockup steps is the failure 
 - the zero-effort path should be the default (e.g., "bot picks for me" pre-selected)
 - "do something for me to confirm" is a request for approval, not approval itself
 - never reconstruct an approved artifact from memory — read it from disk
+- never paste large HTML files into the terminal — give them as downloads for GitHub Desktop
+- on Hetzner: Playwright downloads silently with no progress bar — give it 5 minutes before assuming it's stuck
+- x86 AMD over ARM for VPS when Playwright is involved — fewer compatibility edge cases
+- `pm2 restart --update-env` is required when `.env` changes, plain restart doesn't pick up new vars
+- HTML files served by Express must be in the `public/` subfolder — not the repo root

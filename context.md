@@ -36,6 +36,26 @@ last updated: 2026-04-06
 
 ## active systems
 
+### animabot
+
+- repo: https://github.com/artluai/animabot
+- server: Hetzner VPS at 195.201.90.47
+- bot directory: `/bots/animabot/`
+- admin panel: http://195.201.90.47
+- public panel: http://195.201.90.47/public.html
+- stack: Node.js, matrix-js-sdk, ethers.js, OpenRouter (Qwen), Postgres, Express, PM2
+- purpose: AI agent framework — bots that live in Matrix chatrooms with their own Ethereum wallet, evolving personality, and daily ego reflection
+- first bot: Zara (ENFP) — fully live in abliterate.ai General and Subnet Meta rooms
+- wallet: 0x66446a0A966390f786373568caE3F816500435ae
+- platform adapters: Matrix/abliterate (built), Telegram/Discord (planned)
+- current status: fully live — Matrix connected, avatar set, personality tuned, reflection cycle running
+- abliterate uses ETH wallet auth via subnet-client npm — not standard Matrix password
+- proactive chime: 30min min, 5 msgs, 5% chance, no double-text, ignores pre-startup messages
+- avatar: set manually via admin panel only — not auto on restart (causes room spam)
+- reflection: detects tone feedback from room, logs caused_by field per reflection entry
+- full technical reference: see `CLAUDE.md` in repo
+- full PRD: see `PRD.md` in repo
+
 ### artlu.ai / tracker
 
 - repo: `artluai-tracker`
@@ -137,5 +157,7 @@ last updated: 2026-04-06
 - pipelinecpc: keyword_ideas mode (seed keyword → server-side filtered results)
 - snapshot: watch search terms, add negatives, tighten the campaign after real impressions
 - vibeskill: port the approved prototype changes back into `radial-v2`
+- animabot: Telegram adapter
+- animabot: MBTI editor in admin panel
 - keep tracker entries and journal entries current as major milestones ship
 - update this file when a workflow, architecture, or source-of-truth setup changes
