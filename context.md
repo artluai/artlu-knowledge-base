@@ -2,7 +2,7 @@
 
 read this first in any new chat before making suggestions, writing tracker content, or changing infra.
 
-last updated: 2026-04-06
+last updated: 2026-04-08
 
 ---
 
@@ -50,9 +50,11 @@ last updated: 2026-04-06
 - platform adapters: Matrix/abliterate (built), Telegram/Discord (planned)
 - current status: fully live — Matrix connected, avatar set, personality tuned, reflection cycle running
 - abliterate uses ETH wallet auth via subnet-client npm — not standard Matrix password
-- proactive chime: 30min min, 5 msgs, 5% chance, no double-text, ignores pre-startup messages
-- avatar: set manually via admin panel only — not auto on restart (causes room spam)
-- reflection: detects tone feedback from room, logs caused_by field per reflection entry
+- deploy: `git stash && git pull && pm2 restart animabot` (server often has local edits that block pull)
+- proactive chime: off by default, toggled via admin panel, timer resets on enable, ignores pre-startup messages
+- avatar: set manually via admin panel only — NOT on startup (causes "changed profile picture" spam)
+- reflection: 3am daily, detects tone feedback, logs caused_by per entry
+- chime_config in DB: {enabled, interval_ms, min_messages, probability}
 - full technical reference: see `CLAUDE.md` in repo
 - full PRD: see `PRD.md` in repo
 
