@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-04-08 (tracker conventions, doc standards, VPS patterns added)
+last updated: 2026-04-19 (node 22 fallback for rspack/remotion, tracker conventions, doc standards, VPS patterns added)
 
 ---
 
@@ -217,6 +217,28 @@ they coexist. don't merge them.
 
 - for vite/react prototypes, `npm run build` outputs the production site into `dist/`
 - for direct upload deploys, the contents of `dist/` are the site root
+
+### node version fallback for rspack / remotion issues
+
+- current known machine state: Node 22 is the default on this machine because Node 24 caused repeated rspack / remotion native-binding failures across projects
+- on this machine, some projects using remotion / rspack have failed under Node 24
+- the failure can show up as `@rspack` native binding errors, `ERR_DLOPEN_FAILED`, or native module / code-signature load failures
+- Node 22 is the first fallback when this happens
+- if a project hits this class of error:
+  1. switch to Node 22
+  2. reinstall dependencies
+  3. retry the build or render
+
+preferred fix path:
+
+```bash
+nvm use 22
+rm -rf node_modules package-lock.json
+npm install
+```
+
+- if Node 22 fixes the problem, keep Node 22 as the default for that machine or shell setup
+- treat this as a cross-project runtime compatibility issue, not a one-off repo quirk
 
 ---
 
