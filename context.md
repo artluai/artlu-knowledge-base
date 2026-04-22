@@ -2,7 +2,7 @@
 
 read this first in any new chat before making suggestions, writing tracker content, or changing infra.
 
-last updated: 2026-04-08
+last updated: 2026-04-22 (video showcase live on artlu.ai)
 
 ---
 
@@ -28,6 +28,7 @@ last updated: 2026-04-08
 - if live code exists, use that as the visual source of truth instead of reconstructing from screenshots
 - for skill-mapping systems, never change the underlying branch structure just to make the interface look nicer
 - when building panels meant for external review, optimize for proof and clarity over flavor text
+- verified = mechanical check passed, not code changed. when fixing a reported issue, "done" means a reproducible check ran against the final artifact (rendered file, deployed app, shipped artifact) and passed. "I changed the code" / "the intermediate data looks right" / "I spot-checked by eye" are proxies, not verification. if the project has a check script (e.g. `audit_render.py` in spoolcast), running it on the artifact IS the bar. otherwise, define the check before claiming done. causal models of bugs are always partial; the mechanical audit doesn't depend on the diagnosis being complete.
 
 ## shared references
 
@@ -71,6 +72,7 @@ last updated: 2026-04-08
 - branch mappings were tightened so child branches only receive explicit branch-level credit
 - major remaining gap: ai session imports are still not real
 - emerging product direction: add a stack-organized view/tree as a parallel lens for portfolio-facing use
+- video showcase category now live — homepage 4×2 grid above demo showcase, `/video/:id` guidebook pages fed by `public/videos/<id>/bundle.json` synced from sibling `spoolcast-content/` via `scripts/sync-video.mjs` (requires `brew install webp` for image downscale)
 - key interaction finding: draggable category nodes should not animate positional properties during drag; connector lines and boxes need to read from the same raw coordinates or the map feels laggy
 - key interaction finding: once child branches are expanded, dragging should be disabled until the user collapses back to the normal system view
 - likely next correction: first-run state should begin at zero and only fill after import
@@ -84,6 +86,27 @@ last updated: 2026-04-08
 - a real tracker backup exists in the mcp repo `backups/` folder
 - known quirk: mcp-created tracker projects need a manual `slug` update after create
 - observed in this codex session: `tags` did not persist on `add_project` and needed a follow-up `update_project`
+
+### spoolcast
+
+- repo: https://github.com/artluai/spoolcast (code / rules / scripts / Remotion composition)
+- content dir: sibling directory `spoolcast-content/` (per-session data, media, shot-lists, renders — kept out of the repo so one clone drives many videos)
+- domain: spoolcast.com
+- stack: Claude Code (or any coding agent), Remotion, kie.ai (nano-banana-2 default), Google Cloud TTS (ElevenLabs adapter coming), Python 3.14, Node 22, ffmpeg (homebrew-ffmpeg tap required for libass subtitle burn-in)
+- purpose: turn chat logs, docs, or ideas into narrated illustrated videos. coding agent drives editorial stages via rule files; scripts drive production (image gen → TTS → preprocessor → render → audit → publish)
+- rule files (read in order): `rules.md` (index + non-negotiables + general agent rules) → `PIPELINE.md` (workflow stages, session config, shot-list schema) → `STORY.md` (script extraction + pacing) → `VISUALS.md` (asset generation, preprocessor, transitions) → `SHIPPING.md` (review + publish)
+- `DESIGN_NOTES.md` = why-log (what was tried + killed); `ROADMAP.md` = backlog for future work
+- current transition vocabulary: `cut` + `crossfade` only. paint-on is deferred until the preprocessor outputs RGBA frames (current stroke_reveal emits RGB-with-white which flashes at every entrance). fade-to-white as a standalone exit is banned. meme/broll/reuse chunks hard-cut on BOTH sides (not just into them)
+- style library at `spoolcast-content/styles/<style-name>/` with anchor image + character/object references; per-session style locked via `session.json`'s `style` field
+- render audit gate: `scripts/audit_render.py` must pass against the final mp4 before anything claims "shipped". writes sentinel at `working/render-audit.passed`. same rule in human-in-loop + autonomous modes
+- shipped videos: pilot (Meta TRIBE explainer, ~5min), explainer (*I don't make videos. My AI pipeline does.*, ~8min, artlu.ai/project/what-is-spoolcast), dev-log #1 (*Building with AI: how I stopped my AI from silently breaking rules*, ~4min, youtu.be/i3Z480n1k6k)
+- tracker projects: each video is its own tracker entry; `spoolcast — AI-to-video pipeline` (doc `o9431zuYldMh0P0NS6If`) is the meta-project covering the tooling itself
+- caption convention: SRT includes both narration cues AND bracketed `[on-screen: …]` cues for text rendered on frames. mobile burn-in path strips the bracketed cues (redundant with the frame) via `--exclude-onscreen-cues`
+- thumbnail convention: kie.ai outputs at 1376x768 which YouTube letterboxes — always rescale to exact 1920x1080 before upload (`ffmpeg -vf "scale=1920:1080:flags=lanczos"`)
+- acts/bumpers: never use function-name labels ("PAYOFF", "THE HOOK", "THE REVEAL") — exposes craft to viewer. Use content-describing labels ("CONCLUSION", "THE INCIDENT", "THE DIAGNOSIS")
+- per-video AI budget is a generation count (not dollars) set via `session.json`'s `ai_budget`. ~60 gens ≈ $3-5 at current kie.ai pricing
+- shipped videos get per-video guidebook pages at `artlu.ai/video/<session-id>` — sync script lives in the artluai-tracker repo, reads spoolcast-content directly
+- two roadmap items open: mobile export from widescreen (9:16/1:1 crop + burned captions); text-to-video for prompt-only symbolic chunks. handoff kickoff at `/Users/ralphxu/Documents/Projects/spoolcast-mobile-export-kickoff.txt`
 
 ### snapshot
 
@@ -161,5 +184,8 @@ last updated: 2026-04-08
 - vibeskill: port the approved prototype changes back into `radial-v2`
 - animabot: Telegram adapter
 - animabot: MBTI editor in admin panel
+- spoolcast: mobile export from widescreen (A.1) — 9:16/1:1 crop, burned captions via libass, regen for unsafe chunks
+- spoolcast: text-to-video for prompt-only symbolic chunks (bumpers, mood scenes) via kie.ai video models — exploration, not commitment
+- spoolcast: ElevenLabs TTS adapter (currently Google Cloud TTS only; README flagged as coming-soon)
 - keep tracker entries and journal entries current as major milestones ship
 - update this file when a workflow, architecture, or source-of-truth setup changes

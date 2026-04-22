@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-04-19 (node 22 fallback for rspack/remotion, tracker conventions, doc standards, VPS patterns added)
+last updated: 2026-04-22 (project identity vs doc identity, scope discipline on MCP writes, cwebp downscale, stop-on-wrong, distinguishing reasons)
 
 ---
 
@@ -477,11 +477,57 @@ project names should immediately tell a non-technical person what the project do
 
 ---
 
+## mechanical verification of fixes
+
+"done" means a reproducible check ran against the final artifact and passed — not "code changed," not "intermediate data looks right," not "I spot-checked by eye."
+
+- the check can be programmatic (a test, an audit script, a curl against the live URL) or manual (a specific click-path with a specific expected result), but it must be repeatable and run against the thing the user actually consumes
+- code change = a fix attempt, not a fix. diagnostic models of bugs are always partial; a model that explains N of M reported symptoms doesn't mean the other M-N are gone — it means your model doesn't cover them
+- the audit doesn't depend on the diagnosis being complete. it re-checks the artifact from scratch. run it before claiming a fix shipped, even when "I'm sure that was the right change"
+- examples of the pattern in practice:
+  - spoolcast: `audit_render.py` runs against the final mp4 and writes a sentinel file before anything is called shipped. the rule is "render isn't done until the audit passes" — applies in human-in-loop AND autonomous modes
+  - deployment: verify the live build matches local code (see section above — this is one instance of the broader rule)
+  - ui changes: the mockup approval + the final-state screenshot check are both mechanical verifications, not eyeballed "looks right"
+- when a project has no check yet, define the check before claiming done. "what's the mechanical thing I'd run to prove this?" is the right first question
+- failure mode this prevents: fix the mechanisms you diagnosed, declare done based on diagnostic closure, user points out the symptom is still there, repeat. the audit is the exit condition — not your confidence in the fix
+
+---
+
 ## copy precision
 
 - don't overstate product behavior in marketing copy or tracker writing
 - prefer the most precise honest claim that still makes sense to a non-technical person
 - example: if the product saves a single page, say "website page" instead of "website"
+
+---
+
+## project identity ≠ firestore doc identity
+
+one conceptual project can map to multiple firestore docs. before acting on project-level fields (`showcase`, `top`, etc.), check whether the user's "one project" means one doc or several — grouping is often by URL or intent, not by row. example: VibeSkill and canonical skill-map are two docs pointing at the same `vibeskill-prototype.pages.dev` URL; unflagging one leaves the other visible.
+
+---
+
+## distinguishing reasons when picking from a set
+
+when proposing a specific item from a set, lead with the reason that narrows the set — not a necessary filter shared by multiple candidates. "has `showcase: true` + untouched today" describes a pool; it doesn't pick one item out of the pool. if your reason applies equally to 3 candidates, it's a filter masquerading as a reason.
+
+---
+
+## stop on first "wrong"
+
+when the user says a proposal is wrong, don't cycle through alternative answers. ask what's wrong with the approach or inputs. chained guesses after "wrong" compound the error and force the user to re-litigate the whole instruction.
+
+---
+
+## scope discipline on follow-on MCP writes
+
+after executing a requested action, if the visible outcome doesn't match what the user would naturally expect (a project disappeared, a cascade fired, an item appeared), report the delta in plain english and wait. do not chain a corrective MCP write to paper over the side effect — it needs its own explicit authorization. "fixing" unasked-for side effects compounds the original miss.
+
+---
+
+## image downscale for committed assets
+
+when committing images sourced externally (AI-generated scenes from kie.ai, fetched memes, etc.), downscale via `cwebp` before commit: `cwebp -q 72 -resize 640 0 in.png -o out.webp` typically yields ~60× size reduction with visually lossless results at thumbnail display sizes. ffmpeg's default brew build does NOT include libwebp encoder — install the standalone tool via `brew install webp`. originals stay in the source repo; the web-serving repo only holds the downscaled versions.
 
 ---
 
@@ -596,3 +642,4 @@ partial parity is not parity. skipping the diff and mockup steps is the failure 
 - x86 AMD over ARM for VPS when Playwright is involved — fewer compatibility edge cases
 - `pm2 restart --update-env` is required when `.env` changes, plain restart doesn't pick up new vars
 - HTML files served by Express must be in the `public/` subfolder — not the repo root
+- code change is a fix attempt, not a fix — run the mechanical check against the final artifact before claiming shipped. skipping this was the recurring failure during spoolcast V4 debugging: diagnose 2 of 5 symptoms, mark batch complete, user watches the render, other 3 still there. burned multiple re-render cycles. the audit script is now the exit condition, not the agent's confidence
