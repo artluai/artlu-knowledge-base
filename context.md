@@ -2,7 +2,7 @@
 
 read this first in any new chat before making suggestions, writing tracker content, or changing infra.
 
-last updated: 2026-04-22 (video showcase live on artlu.ai)
+last updated: 2026-04-24 (dev-log #2 v4 rendered, pacing/text-card fixes pending pre-ship)
 
 ---
 
@@ -84,22 +84,23 @@ last updated: 2026-04-22 (video showcase live on artlu.ai)
 - tool surface: `add_project`, `list_projects`, `get_project`, `update_project`, `add_journal_entry`, `list_journal_entries`, `get_journal_entry`, `update_journal_entry`, `delete_journal_entry`, `list_projects_with_ids`
 - codex setup now works with the same local node server and firestore credentials previously used in claude
 - a real tracker backup exists in the mcp repo `backups/` folder
-- known quirk: mcp-created tracker projects need a manual `slug` update after create
 - observed in this codex session: `tags` did not persist on `add_project` and needed a follow-up `update_project`
+- (fixed Apr 2026) `add_project` now auto-generates a kebab-cased slug from the project name, mirroring `add_journal_entry`. `update_project` regenerates the slug when `name` changes. The previous "manual slug update after create" workaround is no longer required once the rebuilt MCP is reloaded in Claude Desktop.
 
 ### spoolcast
 
 - repo: https://github.com/artluai/spoolcast (code / rules / scripts / Remotion composition)
 - content dir: sibling directory `spoolcast-content/` (per-session data, media, shot-lists, renders — kept out of the repo so one clone drives many videos)
 - domain: spoolcast.com
-- stack: Claude Code (or any coding agent), Remotion, kie.ai (nano-banana-2 default), Google Cloud TTS (ElevenLabs adapter coming), Python 3.14, Node 22, ffmpeg (homebrew-ffmpeg tap required for libass subtitle burn-in)
+- stack: Claude Code (or any coding agent), Remotion, kie.ai (gpt-image-2 default as of 2026-04-23; text-to-image + image-to-image variants auto-swapped on ref presence; nano-banana-2/seedream/wan still supported via `--model`), Google Cloud TTS (ElevenLabs adapter coming), Python 3.14, Node 22, ffmpeg (homebrew-ffmpeg tap required for libass subtitle burn-in)
 - purpose: turn chat logs, docs, or ideas into narrated illustrated videos. coding agent drives editorial stages via rule files; scripts drive production (image gen → TTS → preprocessor → render → audit → publish)
-- rule files (read in order): `rules.md` (index + non-negotiables + general agent rules) → `PIPELINE.md` (workflow stages, session config, shot-list schema) → `STORY.md` (script extraction + pacing) → `VISUALS.md` (asset generation, preprocessor, transitions) → `SHIPPING.md` (review + publish)
+- rule files (read in order): `rules.md` (index + non-negotiables + general agent rules) → `PIPELINE.md` (workflow stages, session config, shot-list schema) → `STORY.md` (script extraction + pacing) → `VISUALS.md` (asset generation, preprocessor, transitions) → `SHIPPING.md` (review + publish) → `VIDEO_OUTPUT_RULES.md` (engine-level video output: character cloning, kling 3.0 gotchas, ffmpeg concat, caption placement — learned from news-anime-bot ep 1)
+- recurring shows live in `spoolcast-content/shows/<show-name>/` (new convention; first instance is `news-anime-bot`). one-off videos still live in `spoolcast-content/sessions/<session-id>/`
 - `DESIGN_NOTES.md` = why-log (what was tried + killed); `ROADMAP.md` = backlog for future work
 - current transition vocabulary: `cut` + `crossfade` only. paint-on is deferred until the preprocessor outputs RGBA frames (current stroke_reveal emits RGB-with-white which flashes at every entrance). fade-to-white as a standalone exit is banned. meme/broll/reuse chunks hard-cut on BOTH sides (not just into them)
 - style library at `spoolcast-content/styles/<style-name>/` with anchor image + character/object references; per-session style locked via `session.json`'s `style` field
 - render audit gate: `scripts/audit_render.py` must pass against the final mp4 before anything claims "shipped". writes sentinel at `working/render-audit.passed`. same rule in human-in-loop + autonomous modes
-- shipped videos: pilot (Meta TRIBE explainer, ~5min), explainer (*I don't make videos. My AI pipeline does.*, ~8min, artlu.ai/project/what-is-spoolcast), dev-log #1 (*Building with AI: how I stopped my AI from silently breaking rules*, ~4min, youtu.be/i3Z480n1k6k)
+- shipped videos: pilot (Meta TRIBE explainer, ~5min), explainer (*I don't make videos. My AI pipeline does.*, ~8min, artlu.ai/project/what-is-spoolcast), dev-log #1 (*Building with AI: how I stopped my AI from silently breaking rules*, ~4min, youtu.be/i3Z480n1k6k), daily ai news satire pilot ep 1 (*OpenAI's Q1 Disaster*, ~46s vertical, youtube.com/shorts/_umRCKLUG8k)
 - tracker projects: each video is its own tracker entry; `spoolcast — AI-to-video pipeline` (doc `o9431zuYldMh0P0NS6If`) is the meta-project covering the tooling itself
 - caption convention: SRT includes both narration cues AND bracketed `[on-screen: …]` cues for text rendered on frames. mobile burn-in path strips the bracketed cues (redundant with the frame) via `--exclude-onscreen-cues`
 - thumbnail convention: kie.ai outputs at 1376x768 which YouTube letterboxes — always rescale to exact 1920x1080 before upload (`ffmpeg -vf "scale=1920:1080:flags=lanczos"`)
@@ -107,6 +108,20 @@ last updated: 2026-04-22 (video showcase live on artlu.ai)
 - per-video AI budget is a generation count (not dollars) set via `session.json`'s `ai_budget`. ~60 gens ≈ $3-5 at current kie.ai pricing
 - shipped videos get per-video guidebook pages at `artlu.ai/video/<session-id>` — sync script lives in the artluai-tracker repo, reads spoolcast-content directly
 - two roadmap items open: mobile export from widescreen (9:16/1:1 crop + burned captions); text-to-video for prompt-only symbolic chunks. handoff kickoff at `/Users/ralphxu/Documents/Projects/spoolcast-mobile-export-kickoff.txt`
+
+### news-anime-bot
+
+- path: `/Users/ralphxu/Documents/Projects/spoolcast-content/shows/news-anime-bot/`
+- public-facing tracker name: "daily ai news satire pilot"
+- purpose: daily ai news satire short — onion-deadpan narration over bleach manga anime visuals, "faux7 news" framing
+- first recurring show built on the spoolcast engine. lives under `spoolcast-content/shows/` (new sibling dir to `sessions/` for series; one-offs stay in `sessions/`)
+- locked decisions in `rules.md`: house style, cast (altman + cfo refs), voice (schedar), branding (faux7 news watermark), beat structure, editorial format
+- inherits engine-level video rules from `spoolcast/VIDEO_OUTPUT_RULES.md`
+- episode 1 shipped: *OpenAI's Q1 Disaster* (~46s, 9:16, ~$4.50/ep)
+  - youtube shorts: https://youtube.com/shorts/_umRCKLUG8k
+  - tiktok: https://www.tiktok.com/t/ZP8g3JPF5/
+- pipeline: kling 3.0 video + gpt-image-2 character refs + google chirp3-hd schedar tts + ffmpeg stitch
+- status: episode 1 mvp working end-to-end + published; episodes 2..n waiting on news-fetch/triage automation + character bible / arc tracker / publish gate
 
 ### snapshot
 
@@ -184,8 +199,10 @@ last updated: 2026-04-22 (video showcase live on artlu.ai)
 - vibeskill: port the approved prototype changes back into `radial-v2`
 - animabot: Telegram adapter
 - animabot: MBTI editor in admin panel
+- spoolcast: dev-log #2 — *how I caught an AI lying* — v4 rendered (~3:41, 49 chunks). Pending pre-ship fixes: silence/pacing violations (0:10, 1:40, 3:15–3:25), meme duration classification (reaction memes held too long), meme cluster at 2:10, text-card density over 10% cap. Style: wojak-gpt2 (new GPT Image 2 native library sibling to wojak-comic). Ending: circular-callback archetype. Full path: `/Users/ralphxu/Documents/Projects/spoolcast-content/sessions/spoolcast-dev-log-02/`
 - spoolcast: mobile export from widescreen (A.1) — 9:16/1:1 crop, burned captions via libass, regen for unsafe chunks
 - spoolcast: text-to-video for prompt-only symbolic chunks (bumpers, mood scenes) via kie.ai video models — exploration, not commitment
 - spoolcast: ElevenLabs TTS adapter (currently Google Cloud TTS only; README flagged as coming-soon)
+- news-anime-bot: episode 2 — automate story selection (rss/reddit fetcher + llm triage), build out character bible / arc tracker, wire publish gate
 - keep tracker entries and journal entries current as major milestones ship
 - update this file when a workflow, architecture, or source-of-truth setup changes
