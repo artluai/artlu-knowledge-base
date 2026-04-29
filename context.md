@@ -86,6 +86,7 @@ last updated: 2026-04-24 (dev-log #2 v4 rendered, pacing/text-card fixes pending
 - a real tracker backup exists in the mcp repo `backups/` folder
 - observed in this codex session: `tags` did not persist on `add_project` and needed a follow-up `update_project`
 - (fixed Apr 2026) `add_project` now auto-generates a kebab-cased slug from the project name, mirroring `add_journal_entry`. `update_project` regenerates the slug when `name` changes. The previous "manual slug update after create" workaround is no longer required once the rebuilt MCP is reloaded in Claude Desktop.
+- (fixed Apr 2026) `get_project` and `update_project` now prefer exact (case-insensitive) name match before falling back to substring. Fixes the collision where searching `artlu.ai` used to grab the first `— artlu.ai` suffix project instead of the literal one.
 
 ### spoolcast
 
