@@ -79,7 +79,7 @@ last updated: 2026-04-24 (dev-log #2 v4 rendered, pacing/text-card fixes pending
 
 ### artlu tracker mcp
 
-- repo: `artlu-tracker-mcp`
+- repo: https://github.com/artluai/artlu-tracker-mcp (private)
 - purpose: mcp bridge for reading and writing tracker projects + journal entries
 - tool surface: `add_project`, `list_projects`, `get_project`, `update_project`, `add_journal_entry`, `list_journal_entries`, `get_journal_entry`, `update_journal_entry`, `delete_journal_entry`, `list_projects_with_ids`
 - codex setup now works with the same local node server and firestore credentials previously used in claude
