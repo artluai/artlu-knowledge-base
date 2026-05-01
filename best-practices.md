@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-04-22 (project identity vs doc identity, scope discipline on MCP writes, cwebp downscale, stop-on-wrong, distinguishing reasons)
+last updated: 2026-05-01 (tracker title brevity rule; reframed design rules as "rules of thumb" / heuristics, not hard rules; sharpened #2 and #6 to be more meta; project identity vs doc identity, scope discipline on MCP writes, cwebp downscale, stop-on-wrong, distinguishing reasons)
 
 ---
 
@@ -330,6 +330,22 @@ Animabot                                   ← no context
 
 if the project name is self-explanatory (e.g. "reddit brand monitor"), no dash needed.
 
+**keep titles short and readable at a glance.** the title is the first thing a visitor sees in the project table — long titles get truncated, comma-stuffed titles read like changelog notes. cut to the smallest phrase that conveys the deliverable; move detail into `longDesc`.
+
+**too long:**
+```
+subnet-client adapter, broadcast detection, invite evaluation — Animabot
+multi-model support, generate from UI — xqboost
+```
+
+**tighter:**
+```
+subnet-client adapter — Animabot
+on-demand tweet generator — xqboost
+```
+
+drop secondary capabilities, abbreviations, and conjunctions when they're not load-bearing. if you can't decide between two phrasings, pick the one that fits in a tweet.
+
 ### longDesc format
 
 break into short **bold labelled sections**. write for two audiences: a developer and a non-technical person.
@@ -353,6 +369,37 @@ rules:
 - don't start with "This project is a..." or "I built this because..."
 - short sentences, one idea per line
 - technical terms OK — but explain the purpose, not just the name
+
+### longDesc format — videos (different from code projects)
+
+video project entries (spoolcast videos, news-anime-bot episodes, any video deliverable) use a different longDesc shape from the bold-labelled-sections pattern above. viewers visit the tracker page to watch the video, not to read about the pipeline — so lead with content, end with a brief build note.
+
+structure:
+
+1. **the content first.** write the lead like the youtube/tiktok description a viewer would read. story summary, satire copy, or whatever the video is actually about — in the show's editorial voice. no `**What is X?**` label up top; just the content prose. this is what earns attention on the embed below it.
+2. **`**Sources**`** as a short bullet list when the video makes factual claims. every real number, date, and named entity should be traceable.
+3. **AI disclosure** if the video is AI-generated. one short paragraph. tune wording to whether real-figure caricatures are present. avoid `parody / not real` framings when the underlying news is real and sourced — that's editorially dishonest.
+4. **`**How it's made**`** as the closing label. one paragraph: stack, rough cost, "built on the spoolcast engine" or similar. brief.
+
+what does NOT belong in a video tracker entry: detailed build logs, post-mortems, what-changed-vs-previous-episode rundowns. those live in the session dir's `script.md`, the show's `rules.md`, or `DESIGN_NOTES.md`. if a "what changed" section is creeping into the longDesc, move it.
+
+### media field — required for videos
+
+`media` must be the youtube `embed/<id>` URL (e.g. `https://www.youtube.com/embed/uBfr45P2aOM`). the tracker frontend renders this as an iframe — without it the project page shows no inline player. don't skip; the iframe is the whole point of a video entry.
+
+screen.studio links go in `link`, not `media` (screen.studio blocks iframes — see `## Video Embeds` in `artluai-tracker/CLAUDE.md`).
+
+### name format — series episodes
+
+for recurring series (news-anime-bot episodes, dev-log series, etc.), use `<series name> ep N — <topic>`:
+
+**good:**
+```
+daily ai news satire ep 2 — microsoft's $120b ai bet
+spoolcast dev-log #3 — caption burn-in pipeline
+```
+
+the series name + episode number give continuity; the em-dash topic gives specificity. the existing project-name-format rule (description first, name last) still applies for one-off projects.
 
 ### artifactHtml field
 
@@ -528,6 +575,24 @@ after executing a requested action, if the visible outcome doesn't match what th
 ## image downscale for committed assets
 
 when committing images sourced externally (AI-generated scenes from kie.ai, fetched memes, etc.), downscale via `cwebp` before commit: `cwebp -q 72 -resize 640 0 in.png -o out.webp` typically yields ~60× size reduction with visually lossless results at thumbnail display sizes. ffmpeg's default brew build does NOT include libwebp encoder — install the standalone tool via `brew install webp`. originals stay in the source repo; the web-serving repo only holds the downscaled versions.
+
+---
+
+## artlu.ai design rules of thumb
+
+heuristics pulled from past design feedback. useful as a starting point when there's no specific direction yet — these aren't hard rules. if the human pushes back on one, follow the push. but as default behaviors when shipping a first version, these tend to get closer to the answer than convention.
+
+1. **every meaningful block tends to want a section header** — even if the block holds a single piece of content. if there's a "summary" head on the right, the video on the left usually wants one too ("youtube", "tiktok"), not floating without a label.
+2. **adjacent elements tend to behave the same way.** alignment is the visible case (tops line up), but the pattern is broader: vertical rhythm (gap between sections), wrapping behavior (whether long text wraps or runs off), padding, sizing — siblings tend to match unless there's a reason. when something feels "off", look for the asymmetry between two related elements and equalize it.
+3. **margins tend to feel symmetric** unless there's a reason. defaults like `padding: 48px 24px 80px` (top different from sides) usually read as wrong; equal top + sides reads as deliberate.
+4. **above-the-fold matters for primary assets.** if a section holds a hero image or video, the full asset usually needs to fit in the viewport on first paint at common screen sizes. cap height with `min(calc(100vh - X), Y)` and let aspect-ratio derive the rest.
+5. **format-aware UI, same design system.** different content shapes (long vs short, widescreen vs vertical) tend to want different layouts — but stay within the same colors, fonts, radii, and section conventions. rotate or reshuffle existing patterns, don't invent new ones.
+6. **layout tends to follow content.** containers usually want to auto-fit their contents (a grid column with a derived-width item should be `auto`, not a hardcoded px). cards expand for longer descriptions before shrinking back. hardcoded numbers that don't account for content are usually where dead space comes from.
+7. **brief feedback maps to specific fixes** — "still cut", "feels weird", "too wide", "looks bad" usually point to a concrete property (a height calc, a gap, a flex direction). first guess: is something not aligning, not fitting in viewport, or wasting space?
+
+these are heuristics, not laws. when in doubt, ask. when tempted to add an 8th, sharpen one of these instead.
+
+see the artluai-tracker `mockups/` directory for HTML reference implementations.
 
 ---
 

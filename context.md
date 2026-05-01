@@ -72,7 +72,8 @@ last updated: 2026-04-24 (dev-log #2 v4 rendered, pacing/text-card fixes pending
 - branch mappings were tightened so child branches only receive explicit branch-level credit
 - major remaining gap: ai session imports are still not real
 - emerging product direction: add a stack-organized view/tree as a parallel lens for portfolio-facing use
-- video showcase category now live — homepage 4×2 grid above demo showcase, `/video/:id` guidebook pages fed by `public/videos/<id>/bundle.json` synced from sibling `spoolcast-content/` via `scripts/sync-video.mjs` (requires `brew install webp` for image downscale)
+- video showcase category now live — homepage 4×2 grid above demo showcase, `/video/:id` guidebook pages fed by `public/videos/<id>/bundle.json` synced from sibling `spoolcast-content/` via `scripts/sync-video.mjs` (requires `brew install webp` for image downscale, `ffmpeg` for first-frame extraction)
+- video showcase supports two formats: longform widescreen (16:9 thumb top, single-col detail page) and shorts (vertical 9:16, thumb-left card, 2-col detail page with sticky video + beats grid). Shorts source from `spoolcast-content/shows/<show>/sessions/<date>/episode/script.md`; bundle shape diverges (`beats[]` + `characters[]` + `sources[]` + `preRoll{}` instead of `chunks[]` + `style{}`).
 - key interaction finding: draggable category nodes should not animate positional properties during drag; connector lines and boxes need to read from the same raw coordinates or the map feels laggy
 - key interaction finding: once child branches are expanded, dragging should be disabled until the user collapses back to the normal system view
 - likely next correction: first-run state should begin at zero and only fill after import
