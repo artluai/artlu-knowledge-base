@@ -391,15 +391,26 @@ screen.studio links go in `link`, not `media` (screen.studio blocks iframes — 
 
 ### name format — series episodes
 
-for recurring series (news-anime-bot episodes, dev-log series, etc.), use `<series name> ep N — <topic>`:
+for recurring series (news-anime-bot episodes, dev-log series, etc.), use `<topic> - <series id> ep N`:
 
 **good:**
 ```
-daily ai news satire ep 2 — microsoft's $120b ai bet
-spoolcast dev-log #3 — caption burn-in pipeline
+microsoft's $120b ai bet - aninews ep2
+google + amazon's anthropic markup - aninews ep3
+caption burn-in pipeline - spoolcast dev-log #3
 ```
 
-the series name + episode number give continuity; the em-dash topic gives specificity. the existing project-name-format rule (description first, name last) still applies for one-off projects.
+description-first, series-id-and-episode-number last. **what the user reads first should most accurately describe what they're about to see.** consistent with the general project-name-format rule (description first, name last) above.
+
+`<series id>` is a short slug for the series (e.g. `aninews`, `spoolcast dev-log`), not the full public-facing series title. keep it short — long series names crowd out the topic.
+
+**bad:**
+```
+daily ai news satire ep 2 — microsoft's $120b ai bet   ← series first, wrong
+aninews ep3 — google + amazon's anthropic markup       ← series first, wrong
+```
+
+(historical note: ep 1 and ep 2 of news-anime-bot were originally entered with series-first format. rename to topic-first when convenient; not urgent.)
 
 ### artifactHtml field
 
