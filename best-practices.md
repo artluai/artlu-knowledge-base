@@ -3,7 +3,7 @@
 reference doc for all projects. any claude instance should fetch this
 before building anything that touches APIs, auth, deployment, or security.
 
-last updated: 2026-05-01 (tracker title brevity rule; reframed design rules as "rules of thumb" / heuristics, not hard rules; sharpened #2 and #6 to be more meta; project identity vs doc identity, scope discipline on MCP writes, cwebp downscale, stop-on-wrong, distinguishing reasons)
+last updated: 2026-05-16 (artifactHtml push workflow, size/encoding/verify notes — see "artifactHtml field" section; previous: tracker title brevity, design rules as heuristics, scope discipline on MCP writes, cwebp downscale, stop-on-wrong, distinguishing reasons)
 
 ---
 
@@ -415,6 +415,14 @@ aninews ep3 — google + amazon's anthropic markup       ← series first, wrong
 ### artifactHtml field
 
 paste raw HTML directly to embed a live demo via `iframe srcdoc`. no deploy needed. the site renders it automatically. use this for mockups, interactive tools, any single-file HTML artifact.
+
+**push workflow.** `add_project` does not expose `artifactHtml` as a first-class param. create the project first with the main fields (name, desc, longDesc, stack, link, status), then run `update_project(name, { artifactHtml: "..." })` with the HTML in one call. trigger phrase is **"embed this as the demo for [project]"** — see `artluai-tracker/CLAUDE.md` for the full field spec.
+
+**size budget.** a ~70KB self-contained HTML file pushes through `update_project` in a single tool call when minified — strip block comments, redundant whitespace, dev-only banners, long internal indentation. aim for under ~40KB / ~15-20k tokens in the JSON payload to leave headroom for call encoding overhead. if the source file is too big to read in one `Read` call (>25k tokens), use `offset` + `limit` to chunk-read and assemble in context before the tool call.
+
+**encoding.** the value goes through JSON serialization. backticks, template literals, `<script>` blocks survive fine. unicode dashes, arrows, and middle dots are safer written as JSON escapes — `\\u2014` for em-dash, `\\u2192` for right-arrow, `\\u00b7` for middle dot — than as literal characters, which sometimes round-trip wrong through the tool layer. relative URLs in `src`/`href` break because iframe srcdoc has no document base — use absolute URLs (CDN, unsplash, full https) or inline assets.
+
+**verify before pushing.** spin up vite (or any static server) and hit `/@fs/<absolute-path-to.html>` to confirm the file renders and is interactive. screenshot the populated UI before inlining. once `artifactHtml` is set on a project, fixing a typo or layout bug requires another full re-push — there's no in-place edit affordance.
 
 ---
 
