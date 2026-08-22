@@ -613,6 +613,8 @@ these are heuristics, not laws. when in doubt, ask. when tempted to add an 8th, 
 
 see the artluai-tracker `mockups/` directory for HTML reference implementations.
 
+for UI where rows contain rows (job boards, outliners, trees, threaded comments), see `best-practices-ui-hierarchy.md`. those are laws, not heuristics like the list above.
+
 ---
 
 ## external writes require explicit confirmation
